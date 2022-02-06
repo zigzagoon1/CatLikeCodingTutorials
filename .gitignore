@@ -13,6 +13,18 @@
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs
 
+#Unity Files
+/Basics/Library
+/Basics/Logs
+/Basica/obj
+/Basics/ProjectSettings
+/Basics/Temp
+/Basics/UIElementsSchema
+/Basics/UserSettings
+/Basics/Assets/Materials
+/Basics/Assets/Scenes
+/Basics/Assets/TextMesh Pro
+
 # Mono auto generated files
 mono_crash.*
 
@@ -361,3 +373,9 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+Basics/.vsconfig
+*.csproj
+Basics/Assets/UniversalRenderPipelineAsset.asset
+Basics/Assets/UniversalRenderPipelineAsset_Renderer.asset
+Basics/Basics.sln
+Basics/CatLikeCodingTutorials.sln
