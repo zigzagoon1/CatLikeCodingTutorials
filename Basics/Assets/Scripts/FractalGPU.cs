@@ -6,16 +6,12 @@ using Unity.Burst;
 using Unity.Collections;
 using Unity.Jobs;
 
-
+using static Unity.Mathematics.math;
+using quaternion = Unity.Mathematics.quaternion;
+using Random = UnityEngine.Random;
 public class FractalGPU : MonoBehaviour
 {
-    struct FractalPart
-    {
-        public Vector3 direction, worldPos;
-        public Quaternion rotation, worldRotation;
-        public float spinAngle;
-    }
-    [BurstCompile(CompileSynchronously = true)]
+    [BurstCompile(FloatPrecision.Standard, FloatMode.Fast, CompileSynchronously = true)]
     struct UpdateFractalLevelJob : IJobFor
     {
         public float spinAngleDelta;
@@ -25,53 +21,60 @@ public class FractalGPU : MonoBehaviour
         public NativeArray<FractalPart> parents;
         public NativeArray<FractalPart> parts;
         [WriteOnly]
-        public NativeArray<Matrix4x4> matrices;
+        public NativeArray<float3x4> matrices;
 
         public void Execute(int i) {
             FractalPart parent = parents[i / 5];
             FractalPart part = parts[i];
             part.spinAngle += spinAngleDelta;
-            part.worldRotation =
-                parent.worldRotation *
-                (part.rotation * Quaternion.Euler(0f, part.spinAngle, 0f));
-            part.worldPos =
-                parent.worldPos +
-                parent.worldRotation * (1.5f * scale * part.direction);
+            part.worldRotation = mul(parent.worldRotation, mul(part.rotation, quaternion.RotateY(part.spinAngle)));
+            part.worldPos = parent.worldPos + mul(parent.worldRotation, 1.5f * scale * part.direction);
             parts[i] = part;
-
-            matrices[i] = Matrix4x4.TRS(
-                part.worldPos, part.worldRotation, scale * Vector3.one
-            );
+            float3x3 r = float3x3(part.worldRotation) * scale;
+            matrices[i] = float3x4(r.c0, r.c1, r.c2, part.worldPos);
         }
     }
-
+    struct FractalPart
+    {
+        public float3 direction, worldPos;
+        public quaternion rotation, worldRotation;
+        public float spinAngle;
+    }
 
     NativeArray<FractalPart>[] parts;
-    NativeArray<Matrix4x4>[] matrices;
+    NativeArray<float3x4>[] matrices;
 
-    [SerializeField, Range(1, 8)] int depth = 4;
-    [SerializeField] Mesh mesh;
+    [SerializeField, Range(3, 8)] int depth = 4;
+    [SerializeField] Mesh mesh, leafMesh;
     [SerializeField] Material material;
+    [SerializeField] Gradient gradientA, gradientB;
+    [SerializeField] Color leafColorA, leafColorB;
 
-    static Vector3[] directions = { Vector3.up, Vector3.right, Vector3.left, Vector3.forward, Vector3.back };
-    static Quaternion[] rotations = { Quaternion.identity, Quaternion.Euler(0f, 0f, -90f), Quaternion.Euler(0f, 0f, 90f), Quaternion.Euler(90f, 0f, 0f), Quaternion.Euler(-90f, 0f, 0f) };
+    static float3[] directions = { up(), right(), left(), forward(), back() };
+    static quaternion[] rotations = { quaternion.identity, quaternion.RotateZ(-0.5f * PI), quaternion.RotateZ(0.5f * PI), quaternion.RotateX(0.5f * PI), quaternion.RotateX(-0.5f * PI) };
 
     ComputeBuffer[] matricesBuffers;
-    static readonly int matricesID = Shader.PropertyToID("_Matrices");
+    static readonly int colorAID = Shader.PropertyToID("_ColorA"),
+        colorBID = Shader.PropertyToID("_ColorB"),
+        matricesID = Shader.PropertyToID("_Matrices"),
+        sequenceNumbersID = Shader.PropertyToID("_SequenceNumbers");
+
+    Vector4[] sequenceNumbers;
     static MaterialPropertyBlock propertyBlock;
-    FractalPart CreatePart(int childIndex) => new FractalPart { direction = directions[childIndex], rotation = rotations[childIndex] };
     private void OnEnable()
     {
-        propertyBlock ??= new MaterialPropertyBlock();
         parts = new NativeArray<FractalPart>[depth];
-        matrices = new NativeArray<Matrix4x4>[depth];
+        matrices = new NativeArray<float3x4>[depth];
         matricesBuffers = new ComputeBuffer[depth];
-        int stride = 16 * 4;
+        sequenceNumbers = new Vector4[depth];
+        
+        int stride = 12 * 4;
         for (int i = 0, length = 1; i < parts.Length; i++, length *= 5)
         {
             parts[i] = new NativeArray<FractalPart>(length, Allocator.Persistent);
-            matrices[i] = new NativeArray<Matrix4x4>(length, Allocator.Persistent);
+            matrices[i] = new NativeArray<float3x4>(length, Allocator.Persistent);
             matricesBuffers[i] = new ComputeBuffer(length, stride);
+            sequenceNumbers[i] = new Vector4(Random.value, Random.value, Random.value, Random.value);
         }
         parts[0][0] = CreatePart(0);
         for (int li = 1; li < parts.Length; li++)
@@ -85,18 +88,24 @@ public class FractalGPU : MonoBehaviour
                 }
             }
         }
+        propertyBlock ??= new MaterialPropertyBlock();
     }
     private void OnDisable()
     {
-        for (int i = 0; i < matricesBuffers.Length; i++)
+        if (matricesBuffers != null)
         {
-            matricesBuffers[i].Release();
-            parts[i].Dispose();
-            matrices[i].Dispose();
+            for (int i = 0; i < matricesBuffers.Length; i++)
+            {
+                matricesBuffers[i].Release();
+                parts[i].Dispose();
+                matrices[i].Dispose();
+            }
+            parts = null;
+            matrices = null;
             matricesBuffers = null;
+            sequenceNumbers = null;
         }
     }
-
     private void OnValidate()
     {
         if (parts != null && enabled)
@@ -104,18 +113,21 @@ public class FractalGPU : MonoBehaviour
             OnDisable();
             OnEnable();
         }
-
     }
+    FractalPart CreatePart(int childIndex) => new FractalPart { direction = directions[childIndex], rotation = rotations[childIndex] };
+
     private void Update()
     {
-        float spinAngleDelta = 22.5f * Time.deltaTime;
+        float spinAngleDelta = 0.125f * PI * Time.deltaTime;
         FractalPart rootPart = parts[0][0];
         rootPart.spinAngle += spinAngleDelta;
-        rootPart.worldRotation = transform.rotation * (rootPart.rotation * Quaternion.Euler(0f, rootPart.spinAngle, 0f));
+        rootPart.worldRotation = mul(transform.rotation, mul(rootPart.rotation, quaternion.RotateY(rootPart.spinAngle)));
         rootPart.worldPos = transform.position;
         parts[0][0] = rootPart;
         float objectScale = transform.lossyScale.x;
-        matrices[0][0] = Matrix4x4.TRS(rootPart.worldPos, rootPart.worldRotation, Vector3.one);
+        float3x3 r = float3x3(rootPart.worldRotation) * objectScale;
+        matrices[0][0] = float3x4(r.c0, r.c1, r.c2, rootPart.worldPos);
+
         float scale = objectScale;
         JobHandle jobHandle = default;
         for (int li = 1; li < parts.Length; li++)
@@ -128,16 +140,35 @@ public class FractalGPU : MonoBehaviour
                 parents = parts[li - 1],
                 parts = parts[li],
                 matrices = matrices[li]
-            }.Schedule(parts[li].Length, jobHandle);
+            }.ScheduleParallel(parts[li].Length, 5, jobHandle);
         }
         jobHandle.Complete();
         var bounds = new Bounds(rootPart.worldPos, 3f * objectScale * Vector3.one);
+        int leafIndex = matricesBuffers.Length - 1;
         for (int i = 0; i < matricesBuffers.Length; i++)
         {
             ComputeBuffer buffer = matricesBuffers[i];
             buffer.SetData(matrices[i]);
+            Color colorA, colorB;
+            Mesh instanceMesh;
+            if (i == leafIndex)
+            {
+                colorA = leafColorA;
+                colorB = leafColorB;
+                instanceMesh = leafMesh;
+            }
+            else
+            {
+                float gradientInterpolator = i / (matricesBuffers.Length - 2f);
+                colorA = gradientA.Evaluate(gradientInterpolator);
+                colorB = gradientB.Evaluate(gradientInterpolator);
+                instanceMesh = mesh;
+            }
+            propertyBlock.SetColor(colorAID, colorA);
+            propertyBlock.SetColor(colorBID, colorB);
             propertyBlock.SetBuffer(matricesID, buffer);
-            Graphics.DrawMeshInstancedProcedural(mesh, 0, material, bounds, buffer.count, propertyBlock);
+            propertyBlock.SetVector(sequenceNumbersID, sequenceNumbers[i]);
+            Graphics.DrawMeshInstancedProcedural(instanceMesh, 0, material, bounds, buffer.count, propertyBlock);
         }
     }
 }
