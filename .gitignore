@@ -21,6 +21,8 @@
 /Basics/UIElementsSchema
 /Basics/UserSettings
 /Basics/Assets/TextMesh Pro
+/Pseudorandom Noise/ProjectSettings
+/Pseudorandom Noise/Library
 
 # Mono auto generated files
 mono_crash.*
