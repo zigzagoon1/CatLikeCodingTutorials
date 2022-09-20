@@ -1,0 +1,37 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!162 &1
+EditorUserSettings:
+  m_ObjectHideFlags: 0
+  serializedVersion: 4
+  m_ConfigSettings:
+    RecentlyUsedSceneGuid-0:
+      value: 5a5757560101590a5d0c0e24427b5d44434e4c7a7b7a23677f2b4565b7b5353a
+      flags: 0
+    UnityEditor.ShaderGraph.Blackboard:
+      value: 18135939215a0a5004000b0e15254b524c030a3f2964643d120d1230e9e93a3fd6e826abbd2e2d293c4ead313b08042de6030a0afa240c0d020be94c4baf5e435d8715fa32c70d15d11612dacc11fee5d3c5d1fe9ab1bf968f8af0aba0a3b9ada3a0f5a8fff9aa8ce8a2c182a6d8c2869bd1f5dc8e9c9b97ea9c8086ee8a818a8082d48289d18a8d95cfb9cff8c4f7f4ddf2f4c7ccf4c9ffcdcecfeb30e5b27d
+      flags: 0
+    UnityEditor.ShaderGraph.FloatingWindowsLayout2:
+      value: 181344140043005e1a220d3b1f364b524c0c5a27130c293326201334cee5322ca0bd30e8eb293a707b0fd0180b3d0a36fc0d3d04e649500d1002ee0b5dbd1d2c27c00ad113cb1e10e41f1addc80993b98d9885bf88b2b481878bf1a6a4a6bcadb9b3a8c482a7eec9b0a0f0a5aecee8c2c7d9b2d08e9c9189eb87818ae9838686818fdd828ad08d979b809fbeab8aa2e6c9bae68ed7ffc8f9c9d0c5ea31e2ff39303631ebe8e8e0d3f1fb74c12821d6dc3c2ede2826dedfdddac428ddccd9c4925f87
+      flags: 0
+    UnityEditor.ShaderGraph.InspectorWindow:
+      value: 18135939215a0a5004000b0e15254b524c1119263f2d6a722016393ce1eb3d36e5d339f9a5602b2e2c07a37e0901373ae01e0008f707250d171df81a53a5485d4090489c4e9b48499d484c9d984c87af97dbebc2d7f9eec2d1d1b4f3f8dfe8fee6f4b1b9f0f0b291ffffa7e6ff96929c9892e3979b938585b7ede2daa4d69089c2949d9483d58d8c97dff0daf7c1fef1c0f0f6c3d9e780e9c7cccfeb2ee3f634353138e9e9e9e3d6efec709e
+      flags: 0
+    vcSharedLogLevel:
+      value: 0d5e400f0650
+      flags: 0
+  m_VCAutomaticAdd: 1
+  m_VCDebugCom: 0
+  m_VCDebugCmd: 0
+  m_VCDebugOut: 0
+  m_SemanticMergeMode: 2
+  m_DesiredImportWorkerCount: 2
+  m_StandbyImportWorkerCount: 2
+  m_IdleImportWorkerShutdownDelay: 60000
+  m_VCShowFailedCheckout: 1
+  m_VCOverwriteFailedCheckoutAssets: 1
+  m_VCProjectOverlayIcons: 1
+  m_VCHierarchyOverlayIcons: 1
+  m_VCOtherOverlayIcons: 1
+  m_VCAllowAsyncUpdate: 1
+  m_ArtifactGarbageCollection: 1
